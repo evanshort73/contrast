@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Contrast</title>
+    <script src="cielab.js"></script>
+    <style>
+      swatch {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="viewport" width="799" height="799" style="display: block;"></canvas>
+  </body>
+  <script>
+    /*
+    let courtesy = 0.5;
+    let aScale =
+      Math.abs(slope) * courtesy +
+      Math.sqrt(1 + slope * slope) * (1 - courtesy);
+    */
+
+    light = true;
+    if (light) {
+      high = 1.5;
+      aScale = 1;
+      slope = -0.27;
+      lightness = 83;
+      contrast = 7;
+      rgbForeground = {
+        r: 0,
+        g: 0,
+        b: 0
+      };
+      angles = [20, 90, 120, 200, 290, 325];
+    } else {
+      high = 1.5;
+      aScale = 1;
+      slope = -0.27;
+      lightness = 40;
+      contrast = 4.5;
+      rgbForeground = {
+        r: 1,
+        g: 1,
+        b: 1
+      };
+      angles = [20, 90, 120, 200, 290, 325];
+    }
+
+    let canvas = document.getElementById("viewport");
+    let context = canvas.getContext("2d");
+    let image = context.createImageData(canvas.width, canvas.height);
+    let black = {
+      r: 0,
+      g: 0,
+      b: 0
+    };
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        let a = 256 * ((x + 0.5) / canvas.width - 0.5) / aScale;
+        let c = labToRgb(
+          {
+            l: lightness + slope * a,
+            a: a,
+            b: 256 * (0.5 - (y + 0.5) / canvas.height)
+          }
+        );
+
+        let i = 4 * (y * canvas.width + x);
+        let b = srgbToBytes(rgbToSrgb(c));
+        if (b == null) {
+          image.data[i] = 0;
+          image.data[i + 1] = 0;
+          image.data[i + 2] = 0;
+        } else {
+          if (rgbContrastRatio(c, rgbForeground) < contrast) {
+            b = black;
+          }
+
+          image.data[i] = b.r;
+          image.data[i + 1] = b.g;
+          image.data[i + 2] = b.b;
+          image.data[i + 3] = 255;
+        }
+      }
+    }
+
+    context.putImageData(image, 0, 0);
+    context.beginPath();
+    context.arc(
+      0.5 * canvas.width, 0.5 * canvas.height,
+      60,
+      0, 2 * Math.PI
+    );
+    context.fillStyle = "black";
+    context.fill();
+
+    var swatches = [];
+    var hexes = [];
+    for (let i = 0; i < 8; i++) {
+      let angle = Math.PI * angles[i % angles.length] / 180;
+      let b = saturate(high, aScale, lightness, slope, rgbForeground, contrast, angle)
+      let hex = bytesToHex(b);
+      let s = document.createElement("swatch");
+      s.style.background = hex;
+      document.body.appendChild(s);
+      swatches.push(s);
+      hexes.push(hex);
+    }
+
+    function updateSwatches(event) {
+      let angle = Math.PI * event.target.value / 180;
+      let b = saturate(high, aScale, lightness, slope, rgbForeground, contrast, angle);
+      let hex = bytesToHex(b);
+      for (
+        let i = event.target.index;
+        i < swatches.length;
+        i += angles.length
+      ) {
+        swatches[i].style.background = hex;
+      }
+    }
+
+    for (let i = 0; i < angles.length; i++) {
+      let n = document.createElement("input");
+      n.type = "number";
+      n.value = angles[i];
+      n.index = i;
+      n.style.display = "block";
+      n.addEventListener("input", updateSwatches);
+      document.body.appendChild(n);
+    }
+  </script>
+</html>
