@@ -23,9 +23,9 @@
       Math.sqrt(1 + slope * slope) * (1 - courtesy);
     */
 
-    light = true;
+    light = window.location.hash != "#dark";
     if (light) {
-      high = 1.5;
+      high = 0.32;
       aScale = 1;
       slope = -0.27;
       lightness = 83;
@@ -35,9 +35,9 @@
         g: 0,
         b: 0
       };
-      angles = [20, 90, 120, 200, 290, 325];
+      angles = [40, 100, 125, 200, 280, 325];
     } else {
-      high = 1.5;
+      high = 0.32;
       aScale = 1;
       slope = -0.27;
       lightness = 40;
@@ -47,7 +47,27 @@
         g: 1,
         b: 1
       };
-      angles = [20, 90, 120, 200, 290, 325];
+      angles = [48, 100, 125, 200, 280, 325];
+      document.body.style.background = "black"
+    }
+
+    let oldAngles = angles;
+    angles = [];
+    for (let i = 0; i < oldAngles.length; i++) {
+      angles.push(oldAngles[i]);
+      if (i < oldAngles.length - 1) {
+        angles.push(0.5 * (oldAngles[i] + oldAngles[i + 1]));
+      } else {
+        angles.push(0.5 * (oldAngles[i] + oldAngles[0] + 360) % 360);
+      }
+    }
+
+    if (light) {
+      angles[4] = 130;
+      angles[9] = 311;
+    } else {
+      angles[4] = 130;
+      angles[9] = 311;
     }
 
     let canvas = document.getElementById("viewport");
@@ -98,17 +118,29 @@
     context.fillStyle = "black";
     context.fill();
 
-    var swatches = [];
+    var names = ["red", "orange", "yellow", "lime", "green", "teal", "cyan", "sky", "blue", "purple", "pink", "rose"]
+    if (!light) {
+      for (let i = 0; i < names.length; i++) {
+        names[i] = "dark" + names[i].slice(0, 1).toUpperCase() + names[i].slice(1);
+      }
+    }
+
     var hexes = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < angles.length; i++) {
       let angle = Math.PI * angles[i % angles.length] / 180;
-      let b = saturate(high, aScale, lightness, slope, rgbForeground, contrast, angle)
+      let b = saturate(high, aScale, lightness, slope, rgbForeground, contrast, angle);
       let hex = bytesToHex(b);
+      console.log(names[i] + " : String");
+      console.log(names[i] + " = \"" + hex + "\"");
+      hexes.push(hex);
+    }
+
+    var swatches = [];
+    for (let i = 0; i < 14; i++) {
       let s = document.createElement("swatch");
-      s.style.background = hex;
+      s.style.background = hexes[i % hexes.length];
       document.body.appendChild(s);
       swatches.push(s);
-      hexes.push(hex);
     }
 
     function updateSwatches(event) {
